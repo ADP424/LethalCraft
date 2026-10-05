@@ -1,0 +1,19 @@
+# Game assets and extractions: never commit these
+source/
+AssetRipper_export_*/
+Assembly-CSharp.dll
+*.dll
+!tools/**/*.dll
+
+# Build output and local tools
+.tools/
+fabric/build/
+fabric/.gradle/
+fabric/run/
+plugin/bin/
+plugin/obj/
+dist/
+*.user
+.vs/
+tools/**/bin/
+tools/**/obj/

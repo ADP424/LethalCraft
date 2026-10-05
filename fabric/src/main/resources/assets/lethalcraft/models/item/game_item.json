@@ -1,0 +1,10 @@
+{
+  "parent": "minecraft:item/generated",
+  "textures": {
+    "layer0": "lethalcraft:item/game_item"
+  },
+  "display": {
+    "firstperson_righthand": { "scale": [0, 0, 0] },
+    "firstperson_lefthand": { "scale": [0, 0, 0] }
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "id": "lethalcraft",
+  "version": "${version}",
+  "name": "LethalCraft",
+  "description": "Play Lethal Company as a Minecraft player.",
+  "authors": ["LethalCraft contributors", "chasmlol (SkyCraft)"],
+  "contact": {
+    "sources": "https://github.com/chasmlol/SkyCraft"
+  },
+  "license": "MIT",
+  "environment": "client",
+  "entrypoints": {
+    "main": ["dev.lethalcraft.LethalCraft"],
+    "client": ["dev.lethalcraft.client.LethalCraftClient"]
+  },
+  "mixins": [
+    "lethalcraft.mixins.json",
+    { "config": "lethalcraft.client.mixins.json", "environment": "client" }
+  ],
+  "depends": {
+    "fabricloader": ">=0.19.5",
+    "minecraft": "~26.3",
+    "java": ">=25",
+    "fabric-api": "*"
+  }
+}

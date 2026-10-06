@@ -22,7 +22,7 @@ namespace LethalCraft.Link
 		public const long OffWaterGrid = 0x400;
 		public const long OffLadders = 0x840;     // host writes (seqlock): u32 seq, u32 count, then count x 6 floats (box min, max; Minecraft coords)
 		public const int MaxLadders = 24;
-		public const long OffBlockMove = 0xB00;   // host writes: move the ship's blocks (i32 seq, box min/max, quarter turns, offset)
+		public const long OffBlockMove = 0xB00;   // host writes: move the ship's blocks (i32 seq, box min/max, quarter turns, offset, moon slot to clear, clear first)
 		public const long OffGameItems = 0xC00;
 		public const long OffInputRing = 0x1000;
 		public const long OffActorTable = 0x12000;
@@ -105,6 +105,8 @@ namespace LethalCraft.Link
 		public const ushort InReleaseAll = 6;
 		public const ushort InHurt = 7;         // code = HurtKind, a = host damage * 100, b = attacker id, c = HurtFlags
 		public const ushort InOpenMenu = 8;     // open Minecraft's pause menu
+		public const ushort InChat = 9;         // a line typed in the game's chat: code ChatChar, a = one UTF-16 unit; then code ChatSend
+		public const ushort ChatChar = 0, ChatSend = 1;
 		public const ushort HurtMelee = 0, HurtProjectile = 1, HurtMagic = 2, HurtOther = 3;
 		public const int HurtBlockedInHost = 1, HurtPowerAttack = 2;
 

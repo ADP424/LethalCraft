@@ -30,6 +30,7 @@ public final class LethalCraft implements ModInitializer {
 		dev.lethalcraft.item.GameItems.init();
 		dev.lethalcraft.net.LethalNet.init();
 		dev.lethalcraft.world.HostDig.init();
+		dev.lethalcraft.world.MoonBlocks.init();
 		ServerLifecycleEvents.SERVER_STARTED.register(LethalCraft::configureServer);
 		ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
 			outOfTheVoid(handler.getPlayer());

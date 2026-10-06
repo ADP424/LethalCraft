@@ -131,13 +131,15 @@ public final class LethalNet {
 	}
 
 	/** Host client -> server: Lethal Company's ship landed or took off; move its blocks (ShipBlocks). */
-	public record MoveShipBlocks(BlockPos min, BlockPos max, int quarterTurns, BlockPos offset) implements CustomPacketPayload {
+	public record MoveShipBlocks(BlockPos min, BlockPos max, int quarterTurns, BlockPos offset, int clearSlot, boolean clearFirst) implements CustomPacketPayload {
 		public static final Type<MoveShipBlocks> TYPE = new Type<>(Identifier.fromNamespaceAndPath(LethalCraft.MOD_ID, "move_ship_blocks"));
 		public static final StreamCodec<RegistryFriendlyByteBuf, MoveShipBlocks> CODEC = StreamCodec.composite(
 			BlockPos.STREAM_CODEC, MoveShipBlocks::min,
 			BlockPos.STREAM_CODEC, MoveShipBlocks::max,
 			ByteBufCodecs.VAR_INT, MoveShipBlocks::quarterTurns,
 			BlockPos.STREAM_CODEC, MoveShipBlocks::offset,
+			ByteBufCodecs.VAR_INT, MoveShipBlocks::clearSlot,
+			ByteBufCodecs.BOOL, MoveShipBlocks::clearFirst,
 			MoveShipBlocks::new
 		);
 
@@ -229,9 +231,19 @@ public final class LethalNet {
 		PayloadTypeRegistry.serverboundPlay().register(MoveShipBlocks.TYPE, MoveShipBlocks.CODEC);
 		ServerPlayNetworking.registerGlobalReceiver(MoveShipBlocks.TYPE, (payload, context) -> {
 			ServerPlayer player = context.player();
-			// The ship is the host's: only their Lethal Company moves it.
+			// The ship is the host's: only their Lethal Company moves it. Landing, the moon is cleared of what was left
+			// on it before the ship's blocks arrive; taking off, after they've left.
 			if (isHost(player)) {
-				context.server().execute(() -> dev.lethalcraft.world.ShipBlocks.move(player.level(), payload.min(), payload.max(), payload.quarterTurns(), payload.offset()));
+				context.server().execute(() -> {
+					var level = player.level();
+					if (payload.clearFirst()) {
+						dev.lethalcraft.world.MoonBlocks.clear(level, payload.clearSlot());
+					}
+					dev.lethalcraft.world.ShipBlocks.move(level, payload.min(), payload.max(), payload.quarterTurns(), payload.offset());
+					if (!payload.clearFirst()) {
+						dev.lethalcraft.world.MoonBlocks.clear(level, payload.clearSlot());
+					}
+				});
 			}
 		});
 		PayloadTypeRegistry.serverboundPlay().register(HeldGameItems.TYPE, HeldGameItems.CODEC);

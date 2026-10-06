@@ -25,7 +25,7 @@ public final class Proto {
 	/** Lethal Company writes (seqlock): u32 seq, u32 count, then count x 6 floats: its ladders as climbable boxes (min, max). */
 	public static final long OFF_LADDERS = 0x840;
 	public static final int MAX_LADDERS = 24;
-	public static final long OFF_BLOCK_MOVE = 0xB00;
+	public static final long OFF_BLOCK_MOVE = 0xB00; // i32 seq, box min/max, quarter turns, offset, moon slot to clear (0: none), clear first
 	public static final long OFF_GAME_ITEMS = 0xC00;
 	public static final long OFF_INPUT_RING = 0x1000;
 
@@ -64,6 +64,10 @@ public final class Proto {
 	// Input types added in v5
 	public static final int IN_HURT = 7;
 	public static final int IN_OPEN_MENU = 8;
+	/** A line typed in Lethal Company's chat: code CHAT_CHAR, a = one UTF-16 unit; then code CHAT_SEND. */
+	public static final int IN_CHAT = 9;
+	public static final int CHAT_CHAR = 0;
+	public static final int CHAT_SEND = 1;
 	public static final int HURT_MELEE = 0;
 	public static final int HURT_PROJECTILE = 1;
 	public static final int HURT_MAGIC = 2;

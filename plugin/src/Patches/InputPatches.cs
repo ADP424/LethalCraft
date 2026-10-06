@@ -1,6 +1,7 @@
 using GameNetcodeStuff;
 using HarmonyLib;
 using LethalCraft.Input;
+using LethalCraft.Link;
 using LethalCraft.Player;
 using UnityEngine.InputSystem;
 
@@ -119,5 +120,53 @@ namespace LethalCraft.Patches
 		// Scan: the middle button only while Minecraft drives (the right button is interact / Minecraft's use).
 		private static bool Prefix(InputAction.CallbackContext context) =>
 			!InputPatches.Driving(Lc.Game.Player) || InputPatches.FromMouse(context, "middleButton");
+	}
+
+	/// <summary>
+	/// The game's chat is Minecraft's too while Minecraft drives: each line typed in it also goes to
+	/// Minecraft's chat (InputBridge.chat on the Minecraft side), so its commands work. A line starting
+	/// with "/" is a Minecraft command and goes to Minecraft only, not to the other players' chat.
+	/// </summary>
+	[HarmonyPatch(typeof(HUDManager))]
+	internal static class ChatPatches
+	{
+		private const int MinecraftLineLimit = 256;
+
+		// Room for Minecraft's longer commands (the game's own chat still only sends lines under 50).
+		[HarmonyPostfix, HarmonyPatch("EnableChat_performed")]
+		private static void LongerLines(HUDManager __instance)
+		{
+			var field = __instance.chatTextField;
+			if (field != null && field.characterLimit > 0 && field.characterLimit < MinecraftLineLimit && InputPatches.Driving(Lc.Game.Player))
+			{
+				field.characterLimit = MinecraftLineLimit;
+			}
+		}
+
+		[HarmonyPrefix, HarmonyPatch("SubmitChat_performed")]
+		private static void ToMinecraft(HUDManager __instance, InputAction.CallbackContext context)
+		{
+			var p = Lc.Game.Player;
+			var field = __instance.chatTextField;
+			if (!context.performed || field == null || p == null || !p.isTypingChat || p.isPlayerDead || !InputPatches.Driving(p))
+			{
+				return;
+			}
+			string line = field.text;
+			if (string.IsNullOrWhiteSpace(line))
+			{
+				return;
+			}
+			var link = SharedLink.Instance;
+			foreach (char c in line)
+			{
+				link.PushInput(Proto.InChat, Proto.ChatChar, c);
+			}
+			link.PushInput(Proto.InChat, Proto.ChatSend);
+			if (line.TrimStart().StartsWith("/"))
+			{
+				field.text = ""; // the game then just closes its chat
+			}
+		}
 	}
 }

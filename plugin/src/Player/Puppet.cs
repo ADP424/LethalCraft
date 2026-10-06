@@ -59,8 +59,11 @@ namespace LethalCraft.Player
 				return false;
 			}
 			var round = StartOfRound.Instance;
+			// The game's water "sinks" a player standing on the bottom too, at speed 0: swimming is
+			// Minecraft's (World.WaterSurface), so only quicksand, which really sinks, is the game's.
+			bool sinking = p.isSinking && p.sinkingSpeedMultiplier > 0f;
 			return !p.inSpecialInteractAnimation && !p.isClimbingLadder && !p.inVehicleAnimation && !p.jetpackControls && !p.disablingJetpackControls
-				&& !p.isFreeCamera && !p.inTerminalMenu && !p.inShockingMinigame && !p.isSinking && !p.enteringSpecialAnimation
+				&& !p.isFreeCamera && !p.inTerminalMenu && !p.inShockingMinigame && !sinking && !p.enteringSpecialAnimation
 				&& !p.teleportingThisFrame && p.inAnimationWithEnemy == null && !round.suckingPlayersOutOfShip && !round.firingPlayersCutsceneRunning;
 		}
 

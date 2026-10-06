@@ -10,12 +10,17 @@ namespace LethalCraft.World
 	/// the ship's stretch to the moon's, where the ship now stands; when it takes off, back again.
 	/// Minecraft does the moving (ShipBlocks); this works out the box, the quarter turns and the
 	/// offset between the two (Minecraft blocks only turn in quarters: the nearest one is used).
+	///
+	/// The game makes each moon and its facility anew every day, so what players left there (blocks,
+	/// dug holes, dropped items) goes too (MoonBlocks): after the ship's blocks have left it on take
+	/// off, and again on landing before they arrive (in case the last visit ended some other way).
 	/// </summary>
 	internal sealed class ShipBlockMover
 	{
 		public static readonly ShipBlockMover Instance = new ShipBlockMover();
 
 		private const float Margin = 1.5f; // metres around the ship's bounds: blocks built onto the hull
+		private const double SlotBlocks = 4096; // as the Driver's: slot n is centred on x = n * SlotBlocks
 		private bool wasLanded;
 		private bool haveLandedPose;
 		private Matrix4x4 landedPose;      // ship-local -> world, as it stood on the moon
@@ -50,8 +55,8 @@ namespace LethalCraft.World
 				landedPose = ship.localToWorldMatrix;
 				moonOffset = slotOffset;
 				haveLandedPose = true;
-				// Ship's stretch -> the moon's.
-				Move(ShipCorners(lo, hi), ShipToMoon, "landed");
+				// Ship's stretch -> the moon's (cleared first).
+				Move(ShipCorners(lo, hi), ShipToMoon, "landed", MoonSlot, true);
 			}
 			else if (haveLandedPose)
 			{
@@ -60,8 +65,8 @@ namespace LethalCraft.World
 				{
 					corners[i] = ShipToMoon(corners[i]);
 				}
-				// The moon's stretch -> the ship's.
-				Move(corners, MoonToShip, "took off");
+				// The moon's stretch -> the ship's (then the moon is cleared).
+				Move(corners, MoonToShip, "took off", MoonSlot, false);
 				haveLandedPose = false;
 			}
 		}
@@ -103,6 +108,8 @@ namespace LethalCraft.World
 			return c;
 		}
 
+		private int MoonSlot => (int)System.Math.Round(moonOffset / SlotBlocks);
+
 		private Vector3 ShipToMoon(Vector3 shipMc)
 		{
 			float k = Coords.K;
@@ -118,8 +125,8 @@ namespace LethalCraft.World
 			return new Vector3(l.x * k, l.y * k, -l.z * k);
 		}
 
-		/// <summary>Every block in the source box (corners, source Minecraft coords) to where map puts it.</summary>
-		private static void Move(Vector3[] corners, System.Func<Vector3, Vector3> map, string why)
+		/// <summary>Every block in the source box (corners, source Minecraft coords) to where map puts it; the moon slot cleared before or after.</summary>
+		private static void Move(Vector3[] corners, System.Func<Vector3, Vector3> map, string why, int clearSlot, bool clearFirst)
 		{
 			var lo = Vector3.one * float.MaxValue;
 			var hi = Vector3.one * float.MinValue;
@@ -138,8 +145,8 @@ namespace LethalCraft.World
 			var to = Vector3Int.FloorToInt(map(from));
 			var turned = Turn(min, q);
 			var offset = to - turned;
-			SharedLink.Instance.RequestBlockMove(min, max, q, offset);
-			Log.Info($"ship {why}: its blocks move with it (box {min} .. {max}, {q} quarter turns, offset {offset})");
+			SharedLink.Instance.RequestBlockMove(min, max, q, offset, clearSlot, clearFirst);
+			Log.Info($"ship {why}: its blocks move with it (box {min} .. {max}, {q} quarter turns, offset {offset}); moon slot {clearSlot} cleared {(clearFirst ? "first" : "after")}");
 		}
 
 		/// <summary>Quarter turns as Minecraft's ShipBlocks.rotate does them.</summary>

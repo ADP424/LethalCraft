@@ -61,7 +61,8 @@ public final class GameItemsClient {
 		}
 		movedSeq = m.seq();
 		ClientPlayNetworking.send(new LethalNet.MoveShipBlocks(new net.minecraft.core.BlockPos(m.minX(), m.minY(), m.minZ()),
-			new net.minecraft.core.BlockPos(m.maxX(), m.maxY(), m.maxZ()), m.quarterTurns(), new net.minecraft.core.BlockPos(m.dx(), m.dy(), m.dz())));
+			new net.minecraft.core.BlockPos(m.maxX(), m.maxY(), m.maxZ()), m.quarterTurns(), new net.minecraft.core.BlockPos(m.dx(), m.dy(), m.dz()),
+			m.clearSlot(), m.clearFirst()));
 	}
 
 	private static int surroundingsTicks;

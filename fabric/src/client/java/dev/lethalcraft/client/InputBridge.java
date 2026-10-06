@@ -61,6 +61,7 @@ public final class InputBridge {
 					minecraft.keyboardHandler.textInput(handle, new String(Character.toChars(a)));
 				}
 			}
+			case Proto.IN_CHAT -> chat(minecraft, code, a);
 			case Proto.IN_RELEASE_ALL -> releaseAll();
 			case Proto.IN_HURT -> hurt(minecraft, code, a / 100.0F, b, c);
 			case Proto.IN_OPEN_MENU -> {
@@ -71,6 +72,32 @@ public final class InputBridge {
 			}
 			default -> {
 			}
+		}
+	}
+
+	private static final StringBuilder CHAT = new StringBuilder();
+
+	/**
+	 * A line typed in Lethal Company's chat goes to Minecraft's too, as if typed in its chat screen: "/..."
+	 * runs a command (client commands included), anything else is said in chat.
+	 */
+	private static void chat(Minecraft minecraft, int code, int unit) {
+		if (code == Proto.CHAT_CHAR) {
+			if (CHAT.length() < 256) {
+				CHAT.append((char) unit);
+			}
+			return;
+		}
+		String line = net.minecraft.util.StringUtil.trimChatMessage(CHAT.toString().trim());
+		CHAT.setLength(0);
+		if (line.isEmpty() || minecraft.player == null) {
+			return;
+		}
+		minecraft.gui.hud.getChat().addRecentChat(line);
+		if (line.startsWith("/")) {
+			minecraft.player.connection.sendCommand(line.substring(1));
+		} else {
+			minecraft.player.connection.sendChat(line);
 		}
 	}
 

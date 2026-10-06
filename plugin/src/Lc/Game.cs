@@ -33,14 +33,18 @@ namespace LethalCraft.Lc
 			}
 		}
 
-		/// <summary>The game is generating a level or switching scenes.</summary>
+		/// <summary>
+		/// The game is generating a level or switching scenes. Moons without a facility (the Company:
+		/// no enemies or scrap) generate no dungeon, so dungeonCompletedGenerating never comes true there.
+		/// </summary>
 		public static bool Loading
 		{
 			get
 			{
 				var round = StartOfRound.Instance;
 				return round == null || round.newGameIsLoading
-					|| (!round.inShipPhase && round.shipHasLanded && RoundManager.Instance != null && !RoundManager.Instance.dungeonCompletedGenerating);
+					|| (!round.inShipPhase && round.shipHasLanded && round.currentLevel != null && round.currentLevel.spawnEnemiesAndScrap
+						&& RoundManager.Instance != null && !RoundManager.Instance.dungeonCompletedGenerating);
 			}
 		}
 

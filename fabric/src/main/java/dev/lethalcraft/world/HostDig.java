@@ -180,6 +180,7 @@ public final class HostDig {
 			return;
 		}
 		chunk.setAttached(DUG, column.with(world, pos.getX(), pos.getY(), pos.getZ()));
+		MoonBlocks.touched(level, pos.getX() >> 4, pos.getZ() >> 4);
 		BlockState state = materialState(material);
 		if (!player.isCreative()) {
 			ItemStack tool = player.getMainHandItem();
@@ -223,6 +224,7 @@ public final class HostDig {
 			return false;
 		}
 		chunk.setAttached(DUG, column.with(world, pos.getX(), pos.getY(), pos.getZ()));
+		MoonBlocks.touched(level, pos.getX() >> 4, pos.getZ() >> 4);
 		return true;
 	}
 

@@ -9,7 +9,7 @@ facility, the monsters, the scrap, the quota and the co-op lobby.
 
 - Walk, sprint, sneak and jump with Minecraft's physics on Lethal Company's terrain, stairs and catwalks.
 - Build with Minecraft blocks anywhere. They are drawn inside Lethal Company and lit by its lights, and torches and lava light the facility.
-- Blocks built on the ship travel with the ship.
+- Blocks built on the ship travel with the ship. Blocks left on a moon or in its facility are gone when the ship leaves, as the game makes the moon anew.
 - Fight monsters with Minecraft swords, axes and bows. Armour, shields and totems protect you, and one health bar (Minecraft's) is your life.
 - Carry scrap and tools in your Minecraft hotbar, each with its own icon, value and battery bar, and use them with right click.
 - Climb ladders by walking into them, and swim in Lethal Company's water with Minecraft's air bubbles.
@@ -64,7 +64,7 @@ facility, the monsters, the scrap, the quota and the co-op lobby.
 | Fabric Loader | **0.19.5** | |
 | Fabric API | **0.161.0+26.3** | |
 | e4mc | 6.2.x (Fabric, 26.1–26.3) | For multiplayer over the internet (the host's world gets a public link). Without it, shared worlds work on a LAN only. |
-| Java | **25** | Prism can download it for you. |
+| Java | **25** | For Minecraft, Prism can download it for you. For building, install a JDK 25. |
 | Windows | 10 / 11 | The link uses Windows shared memory. |
 
 To build from source you also need the **.NET SDK 8** (or newer) and a **JDK 25** (for Gradle).
@@ -79,50 +79,136 @@ LethalCraft has two halves, and both are needed:
 1. **The Lethal Company plugin** (`plugin/`, C#) is a BepInEx plugin.
 2. **The Minecraft mod** (`fabric/`, Java) is a Fabric mod for the hidden Minecraft.
 
-### 1. Lethal Company side
+There's no packaged release yet, so you build both from this repository. Setup takes about 20 minutes the first
+time.
 
-1. Install r2modman, pick Lethal Company, and **create a new profile** named `LethalCraftDev` (any name works, see
-   below). Don't install other mods into it at first. r2modman installs BepInEx into it automatically.
-2. Launch the game once from that profile and quit, so BepInEx creates its folders.
+### 1. Get the build tools and the source
 
-### 2. Minecraft side
+1. Install the **[.NET SDK](https://dotnet.microsoft.com/download) 8** or newer. Check it in a terminal:
+   `dotnet --version`.
+2. Install a **JDK 25** (for example [Microsoft Build of OpenJDK](https://learn.microsoft.com/java/openjdk/download)
+   or [Adoptium](https://adoptium.net/)). Set `JAVA_HOME` to it, or make it the first `java` on your `PATH`, so
+   Gradle uses it. Check it with `java -version`, which should say 25.
+3. Clone this repository:
 
-1. Install Prism Launcher and sign in with your Microsoft account.
-2. Create an instance named **`LethalCraft`** (exactly this name: the plugin starts `--launch LethalCraft`), with
-   Minecraft **26.3** and Fabric Loader **0.19.5**.
-3. Put **Fabric API 0.161.0+26.3** (and optionally **e4mc**) in the instance's `mods` folder.
-4. Launch the instance once, so Minecraft and Java download, then quit.
+   ```powershell
+   git clone <this repository's URL> LethalCraft
+   cd LethalCraft
+   ```
 
-### 3. Build and install LethalCraft
+### 2. Lethal Company side: a BepInEx profile
 
-From the repository root, in PowerShell:
+1. Install **[r2modman](https://thunderstore.io/package/ebkr/r2modman/)**, choose Lethal Company, and **create a new
+   profile**. The install script assumes it's named **`LethalCraftDev`**; any name works if you pass `-Profile`
+   below. Don't add other mods to it at first. r2modman installs BepInEx into the profile on its own.
+2. Click **Start modded** once, wait for the game's main menu, and quit. This makes BepInEx create its folders,
+   `...\r2modmanPlus-local\LethalCompany\profiles\<profile>\BepInEx\` (`core`, `plugins`, `config`).
+3. Note where Lethal Company is installed (Steam: right-click it → *Manage* → *Browse local files*). You'll pass it
+   as `-GameDir`.
+
+### 3. Minecraft side: a Prism Launcher instance
+
+1. Install **[Prism Launcher](https://prismlauncher.org/)** with its **installer**, which installs to
+   `%LOCALAPPDATA%\Programs\PrismLauncher`, where LethalCraft looks for it. (`C:\Program Files\PrismLauncher` is
+   found too. For a portable Prism anywhere else, see `Launcher` in [Configuration](#configuration).)
+2. In Prism, open **Accounts** (top right) and **add your Microsoft account**. It must own Minecraft: Java Edition.
+3. Click **Add Instance** and set:
+   - **Name: `LethalCraft`**, exactly this name, because the plugin starts it with `prismlauncher.exe --launch LethalCraft`;
+   - **Version: 26.3**;
+   - **Mod loader: Fabric**, version **0.19.5**.
+4. Select the instance, click **Edit**, and change its settings:
+
+   | Page | Setting | Value |
+   |---|---|---|
+   | **Settings → Java** | tick **Java arguments** and enter | `--enable-native-access=ALL-UNNAMED -Dlethalcraft.startHidden=true` |
+   | **Settings → Java** | Java installation | **Java 25**. Leave *Auto-detect* on and let Prism download it, or pick your JDK 25. |
+   | **Settings → Memory** | tick **Memory**, maximum memory allocation | **4096 MB** (at least 3072) |
+   | **Settings → Console** | tick **Console window**, untick *Show console while the game is running* | so no console pops up when the game starts Minecraft |
+
+   What the two Java arguments do:
+   - `--enable-native-access=ALL-UNNAMED` lets the mod use Java's foreign-function API, which it uses to open the
+     shared memory it talks to Lethal Company through (`OpenFileMappingW`). Without it, Java 25 warns at startup,
+     and later Java versions are set to refuse it.
+   - `-Dlethalcraft.startHidden=true` keeps Minecraft's window hidden and its title music silent from the very first
+     frame, before the link to Lethal Company is up. Without it, the window shows for a moment and then hides
+     itself when the game links up.
+5. Still in **Edit**, open **Mods → Download mods** and add, from Modrinth:
+   - **Fabric API** `0.161.0+26.3` (required);
+   - **e4mc** `6.2.x` for Minecraft 26.3. You need this to **host** multiplayer over the internet, and you can skip
+     it otherwise.
+6. **Launch the instance once from Prism.** Prism downloads Minecraft, Fabric and Java. Because of `startHidden`, the
+   game window won't appear on its own. Wait about a minute, then close it from Prism (**Kill**). This first launch
+   only has to download everything and create the instance's `minecraft` folder. If you'd like to watch it start,
+   remove `-Dlethalcraft.startHidden=true` for this run.
+
+### 4. Build and install LethalCraft
+
+From the repository root, in **PowerShell**:
 
 ```powershell
 .\tools\install-dev.ps1 -GameDir "C:\Program Files (x86)\Steam\steamapps\common\Lethal Company" -Profile "LethalCraftDev"
 ```
 
-This:
+If PowerShell refuses to run the script (*"running scripts is disabled on this system"*), run this once:
+`Set-ExecutionPolicy -Scope CurrentUser RemoteSigned`.
 
-- makes a *publicized* copy of the game's `Assembly-CSharp.dll` (its private members made public, for compiling
-  against) in `.tools/`;
+The script:
+
+- makes a *publicized* copy of the game's `Assembly-CSharp.dll` (its private members made public, to compile
+  against) in `.tools/`. It reads the game's DLL from `-GameDir` and doesn't change it;
 - builds the plugin and copies `LethalCraft.dll` into the profile's `BepInEx\plugins\LethalCraft\`;
-- builds the Fabric mod and copies `lethalcraft-<version>.jar` into the Prism instance's `mods` folder.
+- builds the Fabric mod (Gradle downloads itself and Minecraft's libraries the first time, which takes a few
+  minutes) and copies `lethalcraft-<version>.jar` into the Prism instance's `minecraft\mods` folder.
 
 | Parameter | Default | Meaning |
 |---|---|---|
 | `-GameDir` | `D:\Steam\steamapps\common\Lethal Company` | Your Lethal Company install. |
 | `-Profile` | `LethalCraftDev` | The r2modman profile. |
-| `-PrismData` | `%APPDATA%\PrismLauncher` | Prism's data folder. |
+| `-PrismData` | `%APPDATA%\PrismLauncher` | Prism's data folder (where `instances\` is). For a portable Prism, its own folder. |
 | `-SkipPlugin` / `-SkipFabric` | | Build only one half. |
 
-### 4. Play
+When it's done, the instance's `minecraft\mods` folder should hold three jars: `fabric-api-…`, `lethalcraft-…`, and
+`e4mc-…` if you added it.
 
-Start Lethal Company **from the r2modman profile**. The plugin starts Prism's `LethalCraft` instance by itself,
-hidden. Minecraft opens its world in the background, and its HUD (hotbar, hearts, hunger) appears over Lethal
-Company. Closing Lethal Company closes Minecraft.
+### 5. Play
 
-The first time you load a save there's a short pause while Minecraft creates that save's world. The very first
-time, there's also a few-second resource reload while it builds the pack of Lethal Company item icons.
+1. Close Prism, or leave it open; either works.
+2. Start Lethal Company **from r2modman** (*Start modded*, with your LethalCraft profile selected). Starting it from
+   Steam directly runs it without BepInEx.
+3. The plugin starts Prism's `LethalCraft` instance by itself, hidden. Minecraft opens its world in the background,
+   and once you're in a game its HUD (hotbar, hearts, hunger) appears over Lethal Company. Closing Lethal Company
+   saves and closes Minecraft.
+
+The first time you load each save there's a short pause while Minecraft creates that save's world, and you get the
+starter kit. The very first time, there's also a few-second resource reload while Minecraft builds the pack of
+Lethal Company item icons.
+
+**Launching Minecraft by hand.** With `startHidden` set, starting the `LethalCraft` instance from Prism runs
+Minecraft invisibly, waiting for Lethal Company. That's intended, because Lethal Company normally starts it. If
+Minecraft is already running when you start the game, the plugin uses it.
+
+### Updating
+
+Pull the latest source and run `.\tools\install-dev.ps1` again. It replaces both halves. Check
+[`fabric/gradle.properties`](fabric/gradle.properties) in case the Minecraft, Fabric or Fabric API versions moved.
+If they did, update the Prism instance (*Edit → Version*) and Fabric API to match.
+
+### Where things are, and uninstalling
+
+| What | Where |
+|---|---|
+| The plugin | `%APPDATA%\r2modmanPlus-local\LethalCompany\profiles\<profile>\BepInEx\plugins\LethalCraft\` |
+| Its settings | `...\profiles\<profile>\BepInEx\config\dev.lethalcraft.cfg` |
+| Its log | `...\profiles\<profile>\BepInEx\LogOutput.log` |
+| The Minecraft mod | `%APPDATA%\PrismLauncher\instances\LethalCraft\minecraft\mods\lethalcraft-<version>.jar` |
+| Minecraft's worlds (one per save: `LethalCraft-<key>`) | `...\instances\LethalCraft\minecraft\saves\` |
+| Minecraft's log | `...\instances\LethalCraft\minecraft\logs\latest.log` |
+| The item-icon resource pack | `...\instances\LethalCraft\minecraft\resourcepacks\lethalcraft-items\` (rebuilt automatically) |
+| Item icons drawn by the game | `%LOCALAPPDATA%\LethalCraft\item-icons\` |
+
+To uninstall, delete the r2modman profile and the Prism instance, and optionally `%LOCALAPPDATA%\LethalCraft`.
+Lethal Company itself, and its saves, are never modified. Its saves only gain one extra key (`LethalCraftWorld`)
+that the game ignores.
 
 ## Playing
 
@@ -141,6 +227,7 @@ You are a Minecraft player. Minecraft's default keys are yours, and Lethal Compa
 | Sneak + right / left click with a Lethal Company item | Its secondary / tertiary use (the game's Q / E: shotgun safety and reload, …) |
 | Right click anywhere else | Minecraft's use / place block |
 | Middle click | The game's scan |
+| / (the game's chat) | Chat. Each line also goes to Minecraft's chat; a line starting with `/` is a Minecraft command (Minecraft only). |
 | F5 | Third person |
 | Walk into a ladder | Climb it (sneak to hold on) |
 
@@ -156,7 +243,8 @@ the same cause of death, and the other way round. Falls follow Minecraft's rules
 
 **Blocks.** You start each new world with a hotbar kit (sword, pickaxe, bow, arrows, food, planks, cobblestone,
 torches, lanterns), a shield and iron armour. Blocks go anywhere the game has collision, light the game's world,
-and travel with the ship.
+and travel with the ship. A moon is made anew every day, so what you leave on it (blocks, holes dug into it, dropped
+items) is cleared when the ship leaves. Only what's on and around the ship comes along.
 
 ## Multiplayer
 
@@ -213,6 +301,19 @@ LethalCraft.
 | Debug | `Diagnostics` | `false` | A state line in the log every 2 s. |
 | Debug | `ShowMinecraftWindow` | `false` | Keep Minecraft's window visible, to watch what it's doing. Takes effect at the next game start. |
 
+**Minecraft-side switches** go in the Prism instance's **Java arguments**, next to the two required ones. The
+environment variables are mostly for testing.
+
+| Switch | Default | Meaning |
+|---|---|---|
+| `--enable-native-access=ALL-UNNAMED` | *(required)* | Lets the mod open the shared memory (Java's foreign-function API). |
+| `-Dlethalcraft.startHidden=true` | *(recommended)* | No window and no title music from the first frame. |
+| `-Dlethalcraft.showWindow=true` | off | Never hide the window (debugging; same as `ShowMinecraftWindow`). |
+| `-Dlethalcraft.quitWithHost=false` | `true` | Keep Minecraft running after Lethal Company closes. |
+| `-Dlethalcraft.link=Local\Name` / env `LETHALCRAFT_LINK` | `Local\LethalCraft_v1` | The shared-memory name. Set the same on both sides to run a second pair on one PC. |
+| env `LETHALCRAFT_LAN_HOST` | auto | The address a host without e4mc advertises (e.g. `127.0.0.1` for a second client on the same PC). |
+| `-Dlethalcraft.lanOffline=true` / env `LETHALCRAFT_LAN_OFFLINE` | off | A hosted world accepts offline-mode (dev) clients. |
+
 ## Troubleshooting
 
 **Logs.** Lethal Company: `BepInEx\LogOutput.log` in the profile. Minecraft: `logs\latest.log` in the Prism
@@ -222,7 +323,11 @@ instance's `minecraft` folder.
 |---|---|
 | No Minecraft HUD | `latest.log`: `still not in the mirror world; current screen …` means Minecraft is stuck on a screen. Turn on `ShowMinecraftWindow` to see it. |
 | HUD flickers on and off | `LogOutput.log`: repeated `Minecraft disconnected` / `connected` means Minecraft's heartbeat stalled for more than 3 s. |
-| Minecraft never starts | `LogOutput.log`: `no Minecraft launcher found` or `starting Minecraft: …`. Check the Prism instance is named `LethalCraft`. |
+| Minecraft never starts | `LogOutput.log`: `no Minecraft launcher found` or `starting Minecraft: …`. Check that Prism is in `%LOCALAPPDATA%\Programs\PrismLauncher` (or set `Launcher`), and that the instance is named exactly `LethalCraft`. |
+| Minecraft starts but never links (no HUD, `latest.log` shows no `linked to Lethal Company`) | Check the instance's Java arguments include `--enable-native-access=ALL-UNNAMED`, and that `lethalcraft-<version>.jar` and Fabric API are in its `minecraft\mods` folder. |
+| A Minecraft window flashes up at startup | Add `-Dlethalcraft.startHidden=true` to the instance's Java arguments. |
+| `install-dev.ps1`: `No BepInEx in r2modman profile` | Start the game modded from that profile once first, or pass the right `-Profile`. |
+| `install-dev.ps1`: Gradle fails with a Java version error | `JAVA_HOME` isn't a JDK 25. |
 | `PlayerControllerB.Update has N CharacterController.Move calls, expected 1` | The game updated and the movement patch no longer fits. Report it. |
 | Walls where there are none, or falling through floors | Turn on `Diagnostics`. `collision:` lines name slow or unreadable meshes. |
 | A guest never gets into the host's world | Guest's `LogOutput.log`: `couldn't reach the host's Minecraft world` means the address isn't reachable. Over the internet the host needs e4mc; on a LAN, check the host's firewall. |
@@ -652,6 +757,11 @@ a box around it move from slot 0 (the ship's space) to the moon's slot, where th
 they move back. The plugin works out the box, the quarter turns and the offset from the ship's landed pose.
 Minecraft moves the blocks and their block entities, with neighbour updates off so doors and beds arrive whole.
 
+The same request carries a moon slot to clear ([`MoonBlocks.java`](fabric/src/main/java/dev/lethalcraft/world/MoonBlocks.java)):
+after the ship's blocks have left on take-off, and before they arrive on landing (in case the last visit ended
+some other way). A mixin on `LevelChunk.setBlockState`, and digging, note every chunk changed in a moon slot (saved
+with the world). Clearing empties those chunks' blocks, dug cells, dropped items and arrows.
+
 ```text
 dest = rotate(src, quarterTurns) + offset
 quarterTurns = round(angle of map(east) / 90°)      // 1 = east → south, Minecraft's CLOCKWISE_90
@@ -659,9 +769,13 @@ offset       = floor(map(first block's centre)) - rotate(first block, quarterTur
 ```
 
 **Ladders** ([`World/LadderExporter.cs`](plugin/src/World/LadderExporter.cs)). Each nearby `InteractTrigger` with
-`isLadder` becomes a climbable box, running from its foot to just above its top. The box surrounds the spot where the
-game would put a climbing player, plus the ladder's trigger. A mixin on `LivingEntity.onClimbable` makes those boxes
-Minecraft ladders. The game's own ladder mode is off.
+`isLadder` becomes a climbable box. The box surrounds the spot where the game would put a climbing player, plus the
+ladder's trigger. It runs from the ladder's foot to a little over the highest thing between it and the dismount point
+(`topOfLadderPosition`, on the floor above): that floor, or a lip, railing or hatch rim found with downward rays. The
+game ends its own climb 2 m under the dismount point and slides the player the rest of the way, so a second box, a
+band just under the dismount floor, reaches from the column towards it: the player keeps climbing while moving over
+to the way off. A mixin on `LivingEntity.onClimbable` makes those boxes Minecraft ladders. The game's own ladder mode
+is off.
 
 **Water** ([`World/WaterSurface.cs`](plugin/src/World/WaterSurface.cs),
 [`HostWater.java`](fabric/src/main/java/dev/lethalcraft/world/HostWater.java)). The game's water volumes

@@ -344,8 +344,9 @@ public final class HostLink {
 		return null;
 	}
 
-	/** A ship-blocks move Lethal Company asked for: seq, box min/max, quarter turns, offset. */
-	public record BlockMove(int seq, int minX, int minY, int minZ, int maxX, int maxY, int maxZ, int quarterTurns, int dx, int dy, int dz) {
+	/** A ship-blocks move Lethal Company asked for: seq, box min/max, quarter turns, offset, the moon slot to clear (0: none) and when. */
+	public record BlockMove(int seq, int minX, int minY, int minZ, int maxX, int maxY, int maxZ, int quarterTurns, int dx, int dy, int dz, int clearSlot,
+		boolean clearFirst) {
 	}
 
 	/** The latest ship-blocks move request (seq 0: none yet). */
@@ -359,11 +360,11 @@ public final class HostLink {
 		if (seq == 0) {
 			return null;
 		}
-		int[] v = new int[10];
-		for (int i = 0; i < 10; i++) {
+		int[] v = new int[12];
+		for (int i = 0; i < 12; i++) {
 			v[i] = s.get(JAVA_INT, b + 4L + i * 4L);
 		}
-		return new BlockMove(seq, v[0], v[1], v[2], v[3], v[4], v[5], v[6], v[7], v[8], v[9]);
+		return new BlockMove(seq, v[0], v[1], v[2], v[3], v[4], v[5], v[6], v[7], v[8], v[9], v[10], v[11] != 0);
 	}
 
 	/** One of the game's objects the player holds (see Proto GI_*). */

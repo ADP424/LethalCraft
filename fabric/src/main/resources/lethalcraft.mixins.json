@@ -14,6 +14,7 @@
     "InventoryMixin",
     "GuestMovementMixin",
     "ItemMixin",
+    "LevelChunkMoonMixin",
     "LivingEntityClimbMixin",
     "MinecraftServerFlightMixin",
     "PlayerEdgeMixin",

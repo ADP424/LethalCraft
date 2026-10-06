@@ -330,8 +330,11 @@ namespace LethalCraft.Link
 
 		private int blockMoveSeq;
 
-		/// <summary>Ask Minecraft to move every block in [min, max] to rotate(pos, quarterTurns) + offset (ShipBlocks).</summary>
-		public void RequestBlockMove(UnityEngine.Vector3Int min, UnityEngine.Vector3Int max, int quarterTurns, UnityEngine.Vector3Int offset)
+		/// <summary>
+		/// Ask Minecraft to move every block in [min, max] to rotate(pos, quarterTurns) + offset (ShipBlocks), and
+		/// to clear what players left in a moon's slot (MoonBlocks; 0: none), before the move or after it.
+		/// </summary>
+		public void RequestBlockMove(UnityEngine.Vector3Int min, UnityEngine.Vector3Int max, int quarterTurns, UnityEngine.Vector3Int offset, int clearSlot, bool clearFirst)
 		{
 			if (basePtr == null)
 			{
@@ -342,6 +345,8 @@ namespace LethalCraft.Link
 			b[4] = max.x; b[5] = max.y; b[6] = max.z;
 			b[7] = quarterTurns;
 			b[8] = offset.x; b[9] = offset.y; b[10] = offset.z;
+			b[11] = clearSlot;
+			b[12] = clearFirst ? 1 : 0;
 			Thread.MemoryBarrier();
 			Volatile.Write(ref b[0], ++blockMoveSeq);
 		}

@@ -104,9 +104,17 @@ namespace LethalCraft
 			{
 				bool landed = ShipLanded(round, dt);
 				World.ShipBlockMover.Instance.Frame(round, landed, round.currentLevel != null ? (round.currentLevel.levelID + 1) * SlotBlocks : 0);
+				double moon = !round.inShipPhase && round.currentLevel != null ? (round.currentLevel.levelID + 1) * SlotBlocks : 0;
+				var platform = World.Platforms.Instance.Frame(p, !(Game.OnShip && !landed), moon, dt);
 				if (Game.OnShip && !landed)
 				{
 					frame = round.elevatorTransform;
+				}
+				else if (platform != null)
+				{
+					// Riding something that moves (an elevator, a vehicle): its own frame, the platforms' slot.
+					frame = platform;
+					offset = World.Platforms.SlotOffset;
 				}
 				else if (!round.inShipPhase && round.currentLevel != null)
 				{
@@ -116,10 +124,12 @@ namespace LethalCraft
 			else
 			{
 				World.ShipBlockMover.Instance.Reset();
+				World.Platforms.Instance.Reset();
 			}
 			if (frame != lastFrame || offset != lastOffset)
 			{
-				Log.Info(frame != null ? "Minecraft's world follows the ship" : $"Minecraft's world is the moon's ({Game.LevelName}, slot at x {offset:0})");
+				Log.Info(frame == null ? $"Minecraft's world is the moon's ({Game.LevelName}, slot at x {offset:0})"
+					: frame == round?.elevatorTransform ? "Minecraft's world follows the ship" : $"Minecraft's world follows {frame.name} (a moving platform)");
 				lastFrame = frame;
 				lastOffset = offset;
 				Puppet.Instance.Release();
@@ -276,7 +286,7 @@ namespace LethalCraft
 			if (Config.Diagnostics && logTimer <= 0f)
 			{
 				logTimer = 2f;
-				Log.Debug($"state: session={session} play={inPlay} loading={loading} menu={menu} frame={(lastFrame != null ? "ship" : "moon")} slot={lastOffset:0} canDrive={canDrive} puppet={puppet} seq={teleportSeq} ack={mc.TeleportAck}"
+				Log.Debug($"state: session={session} play={inPlay} loading={loading} menu={menu} frame={(lastFrame == null ? "moon" : lastFrame == StartOfRound.Instance?.elevatorTransform ? "ship" : "platform " + lastFrame.name)} slot={lastOffset:0} canDrive={canDrive} puppet={puppet} seq={teleportSeq} ack={mc.TeleportAck}"
 					+ $" | mc inWorld={mcInWorld} pos=({mc.X:0.00} {mc.Y:0.00} {mc.Z:0.00}) ground={mc.Has(Proto.McOnGround)} flags={mc.Flags:X}"
 					+ $" | game=({px:0.00} {py:0.00} {pz:0.00}) yaw={yaw:0} pitch={pitch:0} | collision epoch={epoch} pending={CollisionExporter.Instance.Pending} sections={BlockRenderer.Instance.SectionCount} materials={Materials.Count} lights={BlockLights.Instance.LightsOn}/{BlockLights.Instance.Emitters} overlay frames={overlay.FramesShown} late={ticks.LateFrames} harvest max={CollisionExporter.Instance.MaxMs:0.0}ms");
 				CollisionExporter.Instance.MaxMs = 0f;

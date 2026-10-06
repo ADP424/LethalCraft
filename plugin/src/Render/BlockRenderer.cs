@@ -120,6 +120,9 @@ namespace LethalCraft.Render
 				case Proto.RenLights:
 					BlockLights.Instance.OnLights(data, bytes);
 					break;
+				case Proto.RenSolids:
+					World.BlockSolids.Instance.OnSolids(data, bytes);
+					break;
 				case Proto.RenDug:
 					World.DugBlocks.OnDug(data, bytes);
 					break;
@@ -136,6 +139,7 @@ namespace LethalCraft.Render
 			avatar?.Clear();
 			scene?.Clear();
 			BlockLights.Instance.Clear();
+			World.BlockSolids.Instance.Clear();
 			World.DugBlocks.Clear();
 		}
 

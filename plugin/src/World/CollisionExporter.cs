@@ -431,6 +431,10 @@ namespace LethalCraft.World
 			// Kinematic bodies are the level's moving parts (the ship's hangar door, facility doors): they
 			// stay, and are sent again when they move. Physics bodies (vehicles, ragdolls) are pushed instead.
 			bool physicsBody = col.attachedRigidbody != null && !col.attachedRigidbody.isKinematic;
+			if (physicsBody && frame != null && col.transform.IsChildOf(frame))
+			{
+				physicsBody = false; // riding a vehicle (a platform frame): its body is the ground, and it doesn't move in its own frame
+			}
 			if (col.isTrigger || col is CharacterController || physicsBody || layer == 3 /* Player */ || layer == 19 /* Enemies */
 				|| layer == 20 /* PlayerRagdoll */ || layer == 23 /* EnemiesNotRendered */
 				|| col.GetComponentInParent<LethalCraftOwned>() != null

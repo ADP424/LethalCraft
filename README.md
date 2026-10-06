@@ -9,7 +9,7 @@ facility, the monsters, the scrap, the quota and the co-op lobby.
 
 - Walk, sprint, sneak and jump with Minecraft's physics on Lethal Company's terrain, stairs and catwalks.
 - Build with Minecraft blocks anywhere. They are drawn inside Lethal Company and lit by its lights, and torches and lava light the facility.
-- Blocks built on the ship travel with the ship. Blocks left on a moon or in its facility are gone when the ship leaves, as the game makes the moon anew.
+- Ride the mineshaft's elevator, or any other moving platform, and the blocks built on it ride along. Blocks built on the ship travel with the ship. Blocks left on a moon or in its facility are gone when the ship leaves, as the game makes the moon anew.
 - Fight monsters with Minecraft swords, axes and bows. Armour, shields and totems protect you, and one health bar (Minecraft's) is your life.
 - Carry scrap and tools in your Minecraft hotbar, each with its own icon, value and battery bar, and use them with right click.
 - Climb ladders by walking into them, and swim in Lethal Company's water with Minecraft's air bubbles.
@@ -223,6 +223,7 @@ You are a Minecraft player. Minecraft's default keys are yours, and Lethal Compa
 | Q | Drop the selected item. For a Lethal Company item, the game drops the real object. |
 | Left click | Attack / mine (Minecraft) |
 | Right click on a door, button, lever, terminal or scrap | The game's interact / grab |
+| Right click on a locked door holding a key or lock picker | Unlock it / place the lock picker |
 | Right click with a Lethal Company item | Use it: flashlight, airhorn, shovel swing, walkie-talkie, … |
 | Sneak + right / left click with a Lethal Company item | Its secondary / tertiary use (the game's Q / E: shotgun safety and reload, …) |
 | Right click anywhere else | Minecraft's use / place block |
@@ -242,7 +243,7 @@ Minecraft damage, so armour, shields and totems work. When Minecraft's player di
 the same cause of death, and the other way round. Falls follow Minecraft's rules.
 
 **Blocks.** You start each new world with a hotbar kit (sword, pickaxe, bow, arrows, food, planks, cobblestone,
-torches, lanterns), a shield and iron armour. Blocks go anywhere the game has collision, light the game's world,
+torches, lanterns), a shield and iron armour. Blocks go anywhere the game has collision, are solid to the game's monsters (they path around your walls and can't see through them), light the game's world,
 and travel with the ship. A moon is made anew every day, so what you leave on it (blocks, holes dug into it, dropped
 items) is cleared when the ship leaves. Only what's on and around the ship comes along.
 
@@ -578,6 +579,17 @@ The ship counts as "landed" once it has been still for 0.5 s, and stops counting
 switches, the collision is resent, and Minecraft is teleported into the other slot. Because everything in the ship
 frame is ship-local, riding the ship down is smooth, with no jitter from a moving collision mesh.
 
+**Moving platforms** (the mineshaft's elevator, the Company Cruiser's bed, modded lifts) work the same way, in a slot
+of their own at x ≈ −4096 ([`World/Platforms.cs`](plugin/src/World/Platforms.cs)):
+
+- **What counts as one:** the game's own moving-platform region (`PlayerPhysicsRegion`, which sets the player's
+  `physicsParent`), or else the topmost parent of the collider under the player's feet that moved since the last
+  frame. Lifts without a physics region work too.
+- **When the frame switches:** once it has moved under the player for 0.15 s, it becomes the frame. In a frame, the
+  collision exporter sends only the frame's own colliders, including a vehicle's physics body. Once the platform has
+  been still for 0.5 s, or the player has been off it for 0.3 s, the moon's frame comes back, so walking on and off
+  a stopped lift needs no switching.
+
 ## Collision: Lethal Company's world in Minecraft
 
 Minecraft needs to collide with Lethal Company's geometry. [`World/CollisionExporter.cs`](plugin/src/World/CollisionExporter.cs)
@@ -647,6 +659,11 @@ flowchart LR
   opaque, cutout and translucent variants. `HDRP/Lit` ignores vertex colour, so Minecraft's biome tint comes back as
   a material colour: triangles are grouped by tint, and each group is a submesh with its own material. Ambient
   occlusion is lost.
+- **Solids.** Minecraft also sends which blocks in each section are solid. [`World/BlockSolids.cs`](plugin/src/World/BlockSolids.cs)
+  greedy-merges them into box colliders on the game's `Room` layer, which its line-of-sight and item checks see. Each
+  box gets a carving `NavMeshObstacle`, because the game's monsters walk its navigation mesh, not physics: carving
+  makes them path around walls. The boxes are marked as ours, so the collision exporter never sends them back to
+  Minecraft.
 - **Lights.** Torches, lanterns, lava and glowstone become HDRP point lights (in lumens), for the brightest emitters
   near the player. Flames flicker.
 - **The HUD** is Minecraft's GUI pass, captured each frame into a triple-buffered slot. The plugin draws it with a
@@ -768,6 +785,10 @@ quarterTurns = round(angle of map(east) / 90°)      // 1 = east → south, Mine
 offset       = floor(map(first block's centre)) - rotate(first block, quarterTurns)
 ```
 
+**Platform blocks** use the same move ([`World/FrameBlocks.cs`](plugin/src/World/FrameBlocks.cs), shared with the
+ship). When a platform starts moving, the blocks in a box around its colliders move from the moon's slot into the
+platforms' slot. When it stops, they move back into the moon's slot, where it stopped. Platform moves clear nothing.
+
 **Ladders** ([`World/LadderExporter.cs`](plugin/src/World/LadderExporter.cs)). Each nearby `InteractTrigger` with
 `isLadder` becomes a climbable box. The box surrounds the spot where the game would put a climbing player, plus the
 ladder's trigger. It runs from the ladder's foot to a little over the highest thing between it and the dismount point
@@ -872,7 +893,7 @@ plugin/                         Lethal Company plugin (C#, BepInEx 5, netstandar
   src/Link/                     Proto.cs (layout), SharedLink.cs (mapping, rings, seqlocks)
   src/Lc/                       Game.cs (session/menu/ship state), SaveWorld.cs (per-save key), Lobby.cs (shared world)
   src/Player/                   Puppet.cs (body, animator, look, camera), TickInterpolator.cs
-  src/World/                    CollisionExporter/Worker, ShipBlockMover, LadderExporter, WaterSurface, DugBlocks
+  src/World/                    CollisionExporter/Worker, ShipBlockMover, Platforms, FrameBlocks, LadderExporter, WaterSurface, DugBlocks
   src/Render/                   Overlay, BlockRenderer, MeshBuilder, Materials (HDRP), BlockLights, EntityRenderer
   src/Input/                    InputBridge.cs (routing), KeyMap.cs (Unity key -> SDL scancode)
   src/Combat/                   Combat.cs (actors, hits, health, death)

@@ -65,8 +65,10 @@ namespace LethalCraft.Patches
 	{
 		// Interact: the right button only (E is Minecraft's inventory), and only when InputBridge gave it the press.
 		[HarmonyPrefix, HarmonyPatch("Interact_performed")]
+		// Not with a key or lock picker aimed at a locked door: that press is the item's (InputBridge).
 		private static bool Interact(PlayerControllerB __instance, InputAction.CallbackContext context) =>
-			!InputPatches.Driving(__instance) || InputPatches.FromMouse(context, "rightButton");
+			!InputPatches.Driving(__instance)
+			|| InputPatches.FromMouse(context, "rightButton") && !(Inventory.InventoryBridge.HoldingSelected(__instance) && InputBridge.UnlocksDoorAhead(__instance));
 
 		// Hold-to-interact (the ship's lever, doors with a timer) reads the action directly: the right button only.
 		[HarmonyPrefix, HarmonyPatch(nameof(PlayerControllerB.ClickHoldInteraction))]

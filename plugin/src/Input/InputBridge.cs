@@ -130,7 +130,14 @@ namespace LethalCraft.Input
 			if (mouse.rightButton.wasPressedThisFrame)
 			{
 				EndUse(p);
-				if (LooksAtSomethingOfTheGames(p))
+				if (holding && UnlocksDoorAhead(p))
+				{
+					// A key or a lock picker on a locked door: the item's use is what opens it (the door's own interact only says "locked").
+					right = Right.Use;
+					useDown = true;
+					InventoryBridge.Use(p, true);
+				}
+				else if (LooksAtSomethingOfTheGames(p))
 				{
 					right = Right.Interact;
 				}
@@ -174,6 +181,31 @@ namespace LethalCraft.Input
 			{
 				InventoryBridge.Use(p, false);
 			}
+		}
+
+		/// <summary>
+		/// Holding something that opens locked doors (a key, a lock picker, or a mod's kind of either) and
+		/// looking at a locked one, the way those items look for it: 3 m along the camera, the door layers.
+		/// </summary>
+		public static bool UnlocksDoorAhead(PlayerControllerB p)
+		{
+			var held = p.currentlyHeldObjectServer;
+			if (!(held is KeyItem) && !(held is LockPicker) || p.gameplayCamera == null)
+			{
+				return false;
+			}
+			var cam = p.gameplayCamera.transform;
+			if (!Physics.Raycast(new Ray(cam.position, cam.forward), out RaycastHit hit, 3f, 2816))
+			{
+				return false;
+			}
+			var door = hit.transform.GetComponent<DoorLock>();
+			if (door == null)
+			{
+				var pointer = hit.transform.GetComponent<TriggerPointToDoor>();
+				door = pointer != null ? pointer.pointToDoor : null;
+			}
+			return door != null && door.isLocked && !door.isPickingLock;
 		}
 
 		/// <summary>The game's crosshair tip is up (a door, a button, scrap to pick up...): the right button is its interact.</summary>

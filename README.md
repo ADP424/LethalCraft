@@ -229,6 +229,7 @@ You are a Minecraft player. Minecraft's default keys are yours, and Lethal Compa
 | Right click anywhere else | Minecraft's use / place block |
 | Middle click | The game's scan |
 | / (the game's chat) | Chat. Each line also goes to Minecraft's chat; a line starting with `/` is a Minecraft command (Minecraft only). |
+| T, / | Minecraft's chat. It's the lobby's chat too: lines go out through the game's chat (its 25 m range, walkie-talkies, the dead and the living apart), and the game's own chat box is hidden. `/` commands are Minecraft's. |
 | F5 | Third person |
 | Walk into a ladder | Climb it (sneak to hold on) |
 

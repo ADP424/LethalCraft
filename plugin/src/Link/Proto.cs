@@ -105,8 +105,8 @@ namespace LethalCraft.Link
 		public const ushort InReleaseAll = 6;
 		public const ushort InHurt = 7;         // code = HurtKind, a = host damage * 100, b = attacker id, c = HurtFlags
 		public const ushort InOpenMenu = 8;     // open Minecraft's pause menu
-		public const ushort InChat = 9;         // a line typed in the game's chat: code ChatChar, a = one UTF-16 unit; then code ChatSend
-		public const ushort ChatChar = 0, ChatSend = 1;
+		public const ushort InChat = 9;         // chat: code ChatChar (a = one UTF-16 unit), then ChatSend (Minecraft sends it: a command) or ChatShow (show the game chat line; a = 1 for its notices)
+		public const ushort ChatChar = 0, ChatSend = 1, ChatShow = 2;
 		public const ushort HurtMelee = 0, HurtProjectile = 1, HurtMagic = 2, HurtOther = 3;
 		public const int HurtBlockedInHost = 1, HurtPowerAttack = 2;
 
@@ -119,7 +119,7 @@ namespace LethalCraft.Link
 		// ---- event ring (MC -> host) -----------------------------------------------------------
 		public const int EventRingEntries = 512;
 		public const long ErHead = 0x00, ErTail = 0x40, ErData = 0x80, EventBytes = 32;
-		public const uint EvHitActor = 1, EvPlayerDied = 2, EvExplosion = 3, EvArrowStuck = 4, EvSkillUse = 5, EvDropGameItem = 6;
+		public const uint EvHitActor = 1, EvPlayerDied = 2, EvExplosion = 3, EvArrowStuck = 4, EvSkillUse = 5, EvDropGameItem = 6, EvChatChar = 7, EvChatEnd = 8;
 		public const uint HitCritical = 1u << 0, HitProjectile = 1u << 1, HitSweep = 1u << 2, HitFire = 1u << 3;
 		public const uint WeaponUnarmed = 0, WeaponBlade = 1, WeaponAxe = 2, WeaponBlunt = 3, WeaponPierce = 4, WeaponArrow = 5;
 

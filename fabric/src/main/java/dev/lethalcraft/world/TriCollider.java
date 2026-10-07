@@ -64,9 +64,23 @@ public final class TriCollider {
 			x += mx / steps;
 			z += mz / steps;
 			double[] out = pushOutOfWalls(tris, x, y, z, radius, height, wallFrom, step, px, pz);
-			hitWall |= out[0] != x || out[1] != z;
-			x = out[0];
-			z = out[1];
+			double nx = out[0], nz = out[1];
+			// Ground too steep to walk on is a wall right down to the feet, unless there's ground to step
+			// up onto: otherwise the feet slide in under a hill's surface, and fall through it.
+			double depth = steepDepth(tris, px, y, pz, step);
+			if (steepDepth(tris, nx, y, nz, step) > depth + EPS) {
+				if (steepDepth(tris, nx, y, pz, step) <= depth + EPS) {
+					nz = pz; // slide along it in x
+				} else if (steepDepth(tris, px, y, nz, step) <= depth + EPS) {
+					nx = px; // or in z
+				} else {
+					nx = px;
+					nz = pz;
+				}
+			}
+			hitWall |= nx != x || nz != z;
+			x = nx;
+			z = nz;
 		}
 
 		// 2) Vertical.
@@ -87,6 +101,8 @@ public final class TriCollider {
 			outY = floor - y0; // land / stand / walk up a slope or small ledge
 		} else if (wasOnGround && dy <= 0 && floorWalk > Double.NEGATIVE_INFINITY && y - floorWalk <= Math.max(step, horizontal * 1.5)) {
 			outY = floorWalk - y0; // stick to the ground going downhill instead of hopping
+		} else if (dy <= 0 && floor == Double.NEGATIVE_INFINITY && !Double.isNaN(surfaceJustAbove(tris, x, y, z, step))) {
+			outY = surfaceJustAbove(tris, x, y, z, step) - y0; // inside the ground with nothing under: back up onto it
 		} else {
 			outY = dy; // free movement (possibly shortened by a ceiling)
 		}
@@ -109,6 +125,47 @@ public final class TriCollider {
 			for (double[] s : FLOOR_SAMPLES) {
 				double h = t.heightAt(x + s[0], z + s[1]);
 				if (!Double.isNaN(h) && h <= limit && h > best) {
+					best = h;
+				}
+			}
+		}
+		return best;
+	}
+
+	/**
+	 * How far the feet are under unwalkable (steep) ground, up to the step height, where there's no
+	 * walkable ground within a step to stand on top of it instead: 0 when not under any.
+	 */
+	private static double steepDepth(List<HostTri> tris, double x, double y, double z, double step) {
+		double depth = 0;
+		for (HostTri t : tris) {
+			if (t.walkable || t.minY > y + step || t.maxY < y) {
+				continue;
+			}
+			for (double[] s : FLOOR_SAMPLES) {
+				double h = t.heightAt(x + s[0], z + s[1]);
+				if (Double.isNaN(h) || h - y <= depth || h - y <= 0.02 || h > y + step) {
+					continue;
+				}
+				if (floor(tris, x + s[0], y, z + s[1], true, step) >= h - 0.05) {
+					continue; // a ledge with ground on top: a step up
+				}
+				depth = h - y;
+			}
+		}
+		return depth;
+	}
+
+	/** Lowest surface above the feet, at most {@code maxAbove} over them, under the footprint, or NaN. */
+	private static double surfaceJustAbove(List<HostTri> tris, double x, double y, double z, double maxAbove) {
+		double best = Double.NaN;
+		for (HostTri t : tris) {
+			if (t.minY > y + maxAbove || t.maxY < y) {
+				continue;
+			}
+			for (double[] s : FLOOR_SAMPLES) {
+				double h = t.heightAt(x + s[0], z + s[1]);
+				if (!Double.isNaN(h) && h > y && h <= y + maxAbove && (Double.isNaN(best) || h < best)) {
 					best = h;
 				}
 			}

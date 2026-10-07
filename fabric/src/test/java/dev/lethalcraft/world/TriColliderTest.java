@@ -134,6 +134,53 @@ class TriColliderTest {
 	}
 
 	@Test
+	void steepHillDoesNotSwallowThePlayer() {
+		// A hill a bit too steep to walk up: the feet must not slide in under its surface and drop through.
+		for (double degrees : new double[] { 48, 52, 58 }) {
+			List<HostTri> t = new ArrayList<>();
+			flat(t, -5, -5, 0, 5, 0);
+			ramp(t, 0, 5, -5, 5, 0, degrees);
+			List<double[]> path = simulate(t, -1, 0, 0, 0.2, GRAVITY_TICK, 0, 60);
+			for (double[] p : path) {
+				double surface = p[0] > 0 ? p[0] * Math.tan(Math.toRadians(degrees)) : 0;
+				assertTrue(p[1] >= surface - 0.05, degrees + " degrees: feet under the hill (x=" + p[0] + ", y=" + p[1] + ")");
+			}
+			assertTrue(path.getLast()[1] > -0.05, degrees + " degrees: fell through (y=" + path.getLast()[1] + ")");
+		}
+	}
+
+	@Test
+	void slidesAlongASteepHill() {
+		List<HostTri> t = new ArrayList<>();
+		flat(t, -5, -5, 0, 5, 0);
+		ramp(t, 0, 5, -5, 5, 0, 55);
+		List<double[]> path = simulate(t, -0.5, 0, 0, 0.2, GRAVITY_TICK, 0.2, 20);
+		assertTrue(path.getLast()[2] > 2.5, "walked on along the foot of the hill (z=" + path.getLast()[2] + ")");
+		assertTrue(path.getLast()[1] > -0.05, "still on the ground (y=" + path.getLast()[1] + ")");
+	}
+
+	@Test
+	void stepsOntoASteepBumpWithAFlatTop() {
+		// Terrain's half-block grid makes a small ledge a steep triangle with walkable ground on top: still a step.
+		List<HostTri> t = new ArrayList<>();
+		flat(t, -5, -5, 0, 5, 0);
+		ramp(t, 0, 0.5, -5, 5, 0, 45.5);
+		flat(t, 0.5, -5, 5, 5, 0.5 * Math.tan(Math.toRadians(45.5)));
+		List<double[]> path = simulate(t, -1, 0, 0, 0.2, GRAVITY_TICK, 0, 30);
+		assertTrue(path.getLast()[0] > 2, "went over the bump (x=" + path.getLast()[0] + ")");
+	}
+
+	@Test
+	void climbsBackOutOfTheGround() {
+		// Already under the surface (as after a fall into it): lifted back onto it, not dropped further.
+		List<HostTri> t = new ArrayList<>();
+		ramp(t, -5, 5, -5, 5, 0, 30);
+		double ground = 5 * Math.tan(Math.toRadians(30));
+		double[] m = TriCollider.resolve(t, 0, ground - 0.45, 0, R, H, STEP, false, 0, GRAVITY_TICK, 0);
+		assertTrue(m[1] > 0, "lifted (dy=" + m[1] + ")");
+	}
+
+	@Test
 	void wallStopsAtRadius() {
 		List<HostTri> t = new ArrayList<>();
 		flat(t, -5, -5, 5, 5, 0);

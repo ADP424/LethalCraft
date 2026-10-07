@@ -136,10 +136,11 @@ public final class HostCombat {
 				continue;
 			}
 			proxy.setSize(a.width(), a.height());
+			var from = proxy.position();
 			proxy.setPos(a.x(), a.y(), a.z());
 			proxy.setYRot(a.yaw());
 			proxy.setYHeadRot(a.yaw());
-			stepOnTriggers(level, proxy);
+			touchBlocks(level, proxy, from);
 		}
 		if (PROXIES.size() != before && (PROXIES.size() % 5 == 0 || PROXIES.size() < 5)) {
 			LethalCraft.LOG.info("LethalCraft: {} Lethal Company actors mirrored as hittable stand-ins", PROXIES.size());
@@ -147,19 +148,18 @@ public final class HostCombat {
 	}
 
 	/**
-	 * Lethal Company's enemies press pressure plates and trip tripwires. Their stand-ins are placed, not moved
-	 * (no physics), so Minecraft never checks what they step into; do it for those blocks here.
+	 * What Minecraft's blocks do to a monster in or on them, as they do to anything that walks there: lava,
+	 * fire and campfires burn, cactus and berry bushes prick, wither roses wither, cobwebs and powder snow
+	 * hold, magma scorches, pressure plates press and tripwires trip. Stand-ins are placed, not moved
+	 * (no physics), so Minecraft never checks; this does, along the way the game moved the monster this tick.
+	 * The damage lands on the real monster like any other hit (actuallyHurt).
 	 */
-	private static void stepOnTriggers(ServerLevel level, HostActorEntity proxy) {
-		var box = proxy.getBoundingBox().deflate(1.0E-5);
-		var from = net.minecraft.core.BlockPos.containing(box.minX, box.minY, box.minZ);
-		var to = net.minecraft.core.BlockPos.containing(box.maxX, box.maxY, box.maxZ);
-		for (var pos : net.minecraft.core.BlockPos.betweenClosed(from, to)) {
-			var state = level.getBlockState(pos);
-			if (state.getBlock() instanceof net.minecraft.world.level.block.BasePressurePlateBlock
-				|| state.getBlock() instanceof net.minecraft.world.level.block.TripWireBlock) {
-				state.entityInside(level, pos, proxy, net.minecraft.world.entity.InsideBlockEffectApplier.NOOP, true);
-			}
+	private static void touchBlocks(ServerLevel level, HostActorEntity proxy, net.minecraft.world.phys.Vec3 from) {
+		proxy.applyEffectsFromBlocks(from, proxy.position());
+		var below = proxy.getBlockPosBelowThatAffectsMyMovement();
+		var floor = level.getBlockState(below);
+		if (!floor.isAir()) {
+			floor.getBlock().stepOn(level, below, floor, proxy);
 		}
 	}
 

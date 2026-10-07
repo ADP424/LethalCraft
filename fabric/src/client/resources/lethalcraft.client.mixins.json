@@ -4,6 +4,7 @@
   "compatibilityLevel": "JAVA_25",
   "client": [
     "CameraZoomMixin",
+    "ChatSendMixin",
     "ChatComponentMixin",
     "ClientLevelAccessor",
     "ClientLevelDigMixin",

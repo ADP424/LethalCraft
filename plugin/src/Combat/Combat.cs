@@ -83,6 +83,12 @@ namespace LethalCraft.Combat
 					case Proto.EvPlayerDied:
 						KillGamePlayer(p, "Minecraft's player died");
 						break;
+					case Proto.EvChatChar:
+						Lc.Chat.OnChar(ev.Id);
+						break;
+					case Proto.EvChatEnd:
+						Lc.Chat.OnEnd();
+						break;
 					case Proto.EvDropGameItem:
 						Inventory.InventoryBridge.Instance.OnDropped(ev.Id);
 						break;

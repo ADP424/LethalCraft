@@ -36,7 +36,7 @@ namespace LethalCraft.Input
 		public static bool ScreenOpen;
 
 		// SDL scancodes (USB HID usages) of Minecraft's default keys.
-		private const ushort W = 26, A = 4, S = 22, D = 7, Space = 44, SprintKey = 224, SneakKey = 225, InventoryKey = 8, DropKey = 20, PerspectiveKey = 62;
+		private const ushort W = 26, A = 4, S = 22, D = 7, Space = 44, SprintKey = 224, SneakKey = 225, InventoryKey = 8, DropKey = 20, PerspectiveKey = 62, ChatKey = 23, CommandKey = 56;
 		private static readonly (Key key, ushort scancode)[] Movement =
 		{
 			(Key.W, W), (Key.A, A), (Key.S, S), (Key.D, D), (Key.Space, Space), (Key.LeftCtrl, SprintKey), (Key.LeftShift, SneakKey),
@@ -114,6 +114,8 @@ namespace LethalCraft.Input
 			}
 			SetKey(DropKey, kb.qKey.isPressed);
 			SetKey(PerspectiveKey, kb.f5Key.isPressed);
+			SetKey(ChatKey, kb.tKey.isPressed);
+			SetKey(CommandKey, kb.slashKey.isPressed);
 
 			// The buttons: who each press belongs to is decided when it goes down.
 			bool sneaking = kb.leftShiftKey.isPressed;

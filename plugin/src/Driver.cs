@@ -300,6 +300,7 @@ namespace LethalCraft
 				Mathf.Min(Screen.width, Proto.MaxOverlayW), Mathf.Min(Screen.height, Proto.MaxOverlayH));
 			HideArms(Game.Player, Overlay.Instance.Show);
 			HideGameHud(hideGameHud);
+			HideBody(Game.Player, hideGameHud);
 			// After the ship has moved this frame: the blocks go where Minecraft's origin now is.
 			var blocks = BlockRenderer.Instance;
 			blocks.Place(worldShown);
@@ -327,6 +328,7 @@ namespace LethalCraft
 			Hide(hud.Inventory);
 			Hide(hud.PlayerInfo);
 			Hide(hud.Tooltips);
+			Hide(hud.Chat);
 		}
 
 		private static void Hide(HUDElement e)
@@ -418,6 +420,51 @@ namespace LethalCraft
 				}
 				visorHidden.Clear();
 			}
+		}
+
+		private readonly System.Collections.Generic.List<Renderer> bodyHidden = new System.Collections.Generic.List<Renderer>();
+
+		/// <summary>
+		/// The player's own Lethal Company body (its model, LODs and badges) goes while Minecraft has the
+		/// player: Minecraft's body is the player's (drawn in third person, and casting the shadow), and
+		/// the game's would show through it. Every frame, since the game turns them back on (a suit
+		/// change, a revive); given back only where the game would show it (alive).
+		/// </summary>
+		private void HideBody(GameNetcodeStuff.PlayerControllerB p, bool hide)
+		{
+			if (p == null)
+			{
+				bodyHidden.Clear();
+				return;
+			}
+			if (hide)
+			{
+				var badge = p.playerBadgeMesh != null ? p.playerBadgeMesh.GetComponent<Renderer>() : null;
+				foreach (var r in new Renderer[] { p.thisPlayerModel, p.thisPlayerModelLOD1, p.thisPlayerModelLOD2, p.playerBetaBadgeMesh, badge })
+				{
+					if (r != null && r.enabled)
+					{
+						r.enabled = false;
+						if (!bodyHidden.Contains(r))
+						{
+							bodyHidden.Add(r);
+						}
+					}
+				}
+				return;
+			}
+			if (bodyHidden.Count == 0)
+			{
+				return;
+			}
+			foreach (var r in bodyHidden)
+			{
+				if (r != null && !p.isPlayerDead)
+				{
+					r.enabled = true;
+				}
+			}
+			bodyHidden.Clear();
 		}
 
 		/// <summary>Everything Minecraft has of the game's world is stale: resend it from a new epoch.</summary>

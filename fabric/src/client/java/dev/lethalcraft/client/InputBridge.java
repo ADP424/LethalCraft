@@ -93,6 +93,12 @@ public final class InputBridge {
 		if (line.isEmpty() || minecraft.player == null) {
 			return;
 		}
+		if (code == Proto.CHAT_SHOW) {
+			// The lobby's chat (the game's), in Minecraft's chat; the game's own notices in yellow.
+			var text = net.minecraft.network.chat.Component.literal(line);
+			minecraft.gui.hud.getChat().addClientSystemMessage(unit == 1 ? text.withStyle(net.minecraft.ChatFormatting.YELLOW) : text);
+			return;
+		}
 		minecraft.gui.hud.getChat().addRecentChat(line);
 		if (line.startsWith("/")) {
 			minecraft.player.connection.sendCommand(line.substring(1));

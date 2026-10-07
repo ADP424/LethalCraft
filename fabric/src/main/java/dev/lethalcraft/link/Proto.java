@@ -64,10 +64,14 @@ public final class Proto {
 	// Input types added in v5
 	public static final int IN_HURT = 7;
 	public static final int IN_OPEN_MENU = 8;
-	/** A line typed in Lethal Company's chat: code CHAT_CHAR, a = one UTF-16 unit; then code CHAT_SEND. */
+	/**
+	 * Chat: code CHAT_CHAR, a = one UTF-16 unit, then code CHAT_SEND (send it from this Minecraft: a command) or
+	 * CHAT_SHOW (a line the game's chat has, shown in Minecraft's chat; a = 1 for the game's own notices).
+	 */
 	public static final int IN_CHAT = 9;
 	public static final int CHAT_CHAR = 0;
 	public static final int CHAT_SEND = 1;
+	public static final int CHAT_SHOW = 2;
 	public static final int HURT_MELEE = 0;
 	public static final int HURT_PROJECTILE = 1;
 	public static final int HURT_MAGIC = 2;
@@ -97,6 +101,8 @@ public final class Proto {
 	public static final int EV_EXPLOSION = 3;
 	public static final int EV_ARROW_STUCK = 4;
 	public static final int EV_SKILL_USE = 5;
+	public static final int EV_CHAT_CHAR = 7; // form id = one UTF-16 unit of a line typed in Minecraft's chat
+	public static final int EV_CHAT_END = 8;  // that line is complete: Lethal Company sends it to the lobby
 	public static final int EV_DROP_GAME_ITEM = 6; // id = the game's object id: the player dropped its token
 	// Skill ids for EV_SKILL_USE, kept from SkyCraft. Lethal Company has no skills: the plugin ignores these events.
 	public static final int SKILL_BLOCK = 9;
